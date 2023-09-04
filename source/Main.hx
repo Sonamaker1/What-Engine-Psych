@@ -87,6 +87,15 @@ class Main extends Sprite
 		ClientPrefs.loadDefaultKeys();
 		addChild(new FlxGame(game.width, game.height, game.initialState, #if (flixel < "5.0.0") game.zoom, #end game.framerate, game.framerate, game.skipSplash, game.startFullscreen));
 
+		//trace('changed state');
+		var name = Type.getClassName(Type.getClass(FlxG.state));
+		name = name.replace('.','/');
+		name = name.replace('State','Addons.hx');
+		//trace('['+name+']');
+		trace('First State: ['+ name +']');
+
+		cast(FlxG.state, MusicBeatState).runHScript(name, null);
+
 		#if !mobile
 		fpsVar = new FPS(10, 3, 0xFFFFFF);
 		addChild(fpsVar);

@@ -162,30 +162,33 @@ class MusicBeatState extends FlxUIState implements BeatStateInterface
 	}
 
 	public function runHScript(name:String, hscript:psychlua.HScript, ?modFolder:String="", ?isCustomState:Bool=false){
-	
+		function traced(thingToPrint:String){
+			//trace(thingToPrint);
+		}
+
 		try{		
 			var path:String = "mods/"+modFolder+"/"+name; // Paths.getTextFromFile(name);
 			var y = '';
 			//PLEASE WORK
 			
 			if (FileSystem.exists(path)){
-				trace(path);
+				traced(path);
 				hscripter = new psychlua.HScript(null, path);
 				//y = File.getContent(path);
 			}else if(FileSystem.exists(Paths.modFolders(name))){
-				trace(Paths.modFolders(modFolder+"/"+name));
+				traced(Paths.modFolders(modFolder+"/"+name));
 				hscripter = new psychlua.HScript(null, path);
 				//y = File.getContent(path);
 			}else if(FileSystem.exists(Paths.modFolders(modFolder+"/"+name))){
-				trace(Paths.modFolders(modFolder+"/"+name));
+				traced(Paths.modFolders(modFolder+"/"+name));
 				hscripter = new psychlua.HScript(null, path);
 				//y = File.getContent(path);
 			}else if(FileSystem.exists(modFolder+"/"+name)){
-				trace(modFolder+"/"+name);
+				traced(modFolder+"/"+name);
 				hscripter = new psychlua.HScript(null, path);
 				//y = File.getContent(path);
 			}else if(FileSystem.exists(Paths.modFolders(name))){
-				trace(Paths.modFolders(name));
+				traced(Paths.modFolders(name));
 				hscripter = new psychlua.HScript(null, path);
 				//y = File.getContent(path);
 			}else{
@@ -397,7 +400,7 @@ class MusicBeatState extends FlxUIState implements BeatStateInterface
 
 		
 		//trace('['+name+']');
-		trace('New Name: ['+ name +']');
+		trace('New State: ['+ name +']');
 		//nextState.
 		if(FlxTransitionableState.skipNextTransIn) FlxG.switchState(nextState);
 		else startTransition(nextState);
