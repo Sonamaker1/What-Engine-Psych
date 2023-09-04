@@ -60,9 +60,10 @@ interface BeatStateInterface {
 	public function runHScript(name:String, hscript:psychlua.HScript, ?modFolder:String, ?isCustomState:Bool):Void;
 
 	public function getControl(key:String):Bool;
-
+	
 	//public function callStageFunctions(event:String,args:Array<Dynamic>,gameStages:Map<String,FunkyFunct>):Void;
 
+	public var gameStages:Map<String,FunkyFunct>;
 	public var variables:Map<String, Dynamic>;
 	public var modchartTweens:Map<String, FlxTween>;
 	public var modchartSprites:Map<String, ModchartSprite>;
@@ -93,6 +94,7 @@ class MusicBeatState extends FlxUIState implements BeatStateInterface
 {
 	public var camGame:FlxCamera;
 	
+	public var gameStages:Map<String,FunkyFunct>;
 	private var curSection:Int = 0;
 	private var stepsToDo:Int = 0;
 
@@ -135,6 +137,30 @@ class MusicBeatState extends FlxUIState implements BeatStateInterface
 		return PlayerSettings.player1.controls;*/
 	public var hscripter:psychlua.HScript;
 	
+	public function quickCallHscript(eventName:String, args:Array<Dynamic>){
+		if (args == null){
+			args=[];
+		}
+		try{
+			var ret = gameStages.get(eventName);
+			if(ret!=null){
+				Reflect.callMethod(null, ret.func, args);
+				return;
+			}
+			else{
+				var ret2 = hscripter.variables.get(eventName);
+				if(ret2 != null){
+					Reflect.callMethod(null, ret2, args);
+				}
+			}
+		}
+		catch(err){
+			if((""+err)!="Null Object Reference"){
+				trace("\n["+eventName+"] Function Error: " + err);
+			}
+		}
+	}
+
 	public function runHScript(name:String, hscript:psychlua.HScript, ?modFolder:String="", ?isCustomState:Bool=false){
 	
 		try{		
@@ -171,9 +197,6 @@ class MusicBeatState extends FlxUIState implements BeatStateInterface
 				}
 			}
 			
-	
-			
-			
 		}
 		catch(err){
 			trace(err);
@@ -182,6 +205,7 @@ class MusicBeatState extends FlxUIState implements BeatStateInterface
 
 
 	override function create() {
+		gameStages = new Map<String,FunkyFunct>();
 		camBeat = FlxG.camera;
 		var skip:Bool = FlxTransitionableState.skipNextTransOut;
 		#if MODS_ALLOWED Mods.updatedOnState = false; #end
@@ -193,11 +217,13 @@ class MusicBeatState extends FlxUIState implements BeatStateInterface
 		}
 		FlxTransitionableState.skipNextTransOut = false;
 		timePassedOnState = 0;
+		quickCallHscript("super_create", []);
 	}
 
 	public static var timePassedOnState:Float = 0;
 	override function update(elapsed:Float)
 	{
+		quickCallHscript("super_update", []);
 		//everyStep();
 		var oldStep:Int = curStep;
 		timePassedOnState += elapsed;
@@ -226,10 +252,12 @@ class MusicBeatState extends FlxUIState implements BeatStateInterface
 		});
 
 		super.update(elapsed);
+		quickCallHscript("super_updatePost", []);
 	}
 
 	public function onVideoEnd(filepath:String, success:Bool = true)
 	{
+		quickCallHscript("onVideoEnd", [filepath, success]);
 		//callStageFunctions("onVideoEnd",[filepath, success]);
 	}
 
@@ -285,16 +313,16 @@ class MusicBeatState extends FlxUIState implements BeatStateInterface
 	}
 
 	
-
+	/*
 	public function callStageFunctions(event:String,args:Array<Dynamic>,gameStages:Map<String,FunkyFunct>){
 		try{
 			var ret = gameStages.get(event);
 			if(ret != null){
 				//trace(event);
 				Reflect.callMethod(null, ret.func, args);
-				/*
-				gameParameters.set("args", args);
-				ret.func();*/
+				
+				//gameParameters.set("args", args);
+				//ret.func();
 			}
 			//trace(ret+"("+event+")");
 		}
@@ -302,7 +330,7 @@ class MusicBeatState extends FlxUIState implements BeatStateInterface
 			trace("\n["+event+"] Stage Function Error: " + err);
 		}
 	}
-
+	*/
 	private function updateSection():Void
 	{
 		if(stepsToDo < 1) stepsToDo = Math.round(getBeatsOnSection() * 4);
@@ -353,6 +381,7 @@ class MusicBeatState extends FlxUIState implements BeatStateInterface
 	}
 
 	public static function switchState(nextState:FlxState = null) {
+		//quickCallHscript("static_switchState", []);
 		if(nextState == null) nextState = FlxG.state;
 		if(nextState == FlxG.state)
 		{
@@ -421,6 +450,7 @@ class MusicBeatState extends FlxUIState implements BeatStateInterface
 			stage.curDecBeat = curDecBeat;
 			stage.beatHit();
 		});
+		quickCallHscript("super_beatHit", []);
 	}
 
 	public function sectionHit():Void
@@ -430,6 +460,7 @@ class MusicBeatState extends FlxUIState implements BeatStateInterface
 			stage.curSection = curSection;
 			stage.sectionHit();
 		});
+		quickCallHscript("super_sectionHit", []);
 	}
 
 	function stagesFunc(func:BaseStage->Void)
@@ -482,7 +513,7 @@ class ModchartText extends FlxText
 	}
 }
 
-// New Junk Below For HScript usage lol
+// For SScript usage lol
 typedef FunkyFunct = {
     var func:Void->Void;
 }

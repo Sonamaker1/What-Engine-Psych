@@ -76,6 +76,7 @@ class TitleState extends MusicBeatState
 
 	override public function create():Void
 	{
+		quickCallHscript("create", []);
 		Paths.clearStoredMemory();
 		Paths.clearUnusedMemory();
 
@@ -182,6 +183,7 @@ class TitleState extends MusicBeatState
 			}
 		}
 		#end
+		quickCallHscript("createPost", []);
 	}
 
 	var logoBl:FlxSprite;
@@ -192,6 +194,7 @@ class TitleState extends MusicBeatState
 
 	function startIntro()
 	{
+		quickCallHscript("startIntro", []);
 		if (!initialized)
 		{
 			if(FlxG.sound.music == null) {
@@ -335,6 +338,7 @@ class TitleState extends MusicBeatState
 			initialized = true;
 
 		// credGroup.add(credTextShit);
+		quickCallHscript("startIntroPost", []);
 	}
 
 	function getIntroTextShit():Array<Array<String>>
@@ -363,6 +367,7 @@ class TitleState extends MusicBeatState
 
 	override function update(elapsed:Float)
 	{
+		quickCallHscript("update", []);
 		if (FlxG.sound.music != null)
 			Conductor.songPosition = FlxG.sound.music.time;
 		// FlxG.watch.addQuick('amp', FlxG.sound.music.amplitude);
@@ -501,6 +506,8 @@ class TitleState extends MusicBeatState
 		}
 
 		super.update(elapsed);
+	
+		quickCallHscript("updatePost", []);
 	}
 
 	function createCoolText(textArray:Array<String>, ?offset:Float = 0)
