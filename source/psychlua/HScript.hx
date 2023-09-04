@@ -165,6 +165,38 @@ class HScript extends SScript
 		#end
 	}
 
+	//W: lmaooo
+	public var onParserError:Void->Void;
+	public function onParserErr(stringToDisplay:String):Void
+	{
+		trace(stringToDisplay);
+		if(onParserError!=null){
+			onParserError();
+		}
+	}
+
+	//Lol I'm just gonna throw this in too
+	public function execute2(codeToRun:String):Dynamic
+	{
+		@:privateAccess
+		if(parentLua==null || parentLua.hscript==null) return false;
+
+		parentLua.hscript.parser.line = 1;
+		parentLua.hscript.parser.allowTypes = true;
+		parentLua.hscript.parser.allowJSON = true; 
+		var parsed = parentLua.hscript.parser.parseString(codeToRun);
+		var runningExec:Dynamic;
+		try{
+			runningExec = parentLua.hscript.interp.execute(parsed);
+		}
+		catch(err){
+			// I am not sorry for this code its fixing my workflow
+			onParserErr("Wow an error");
+			runningExec = parentLua.hscript.interp.execute(parsed);
+		}
+		return runningExec;
+	}
+
 	public function executeCode(?funcToRun:String = null, ?funcArgs:Array<Dynamic> = null):SCall
 	{
 		if (funcToRun == null) return null;

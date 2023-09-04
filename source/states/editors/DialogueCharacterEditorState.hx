@@ -48,7 +48,7 @@ class DialogueCharacterEditorState extends MusicBeatState
 	var offsetIdleText:FlxText;
 	var animText:FlxText;
 
-	var camGame:FlxCamera;
+	//var camGame:FlxCamera;
 	var camHUD:FlxCamera;
 
 	var mainGroup:FlxSpriteGroup;

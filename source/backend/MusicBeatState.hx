@@ -1,11 +1,98 @@
 package backend;
 
+import psychlua.FunkinLua;
+import backend.Conductor.BPMChangeEvent;
+import flixel.FlxG;
 import flixel.addons.ui.FlxUIState;
+import flixel.math.FlxRect;
+import flixel.util.FlxTimer;
 import flixel.addons.transition.FlxTransitionableState;
+import flixel.tweens.FlxEase;
+import flixel.tweens.FlxTween;
+import flixel.FlxSprite;
+import flixel.util.FlxColor;
+import flixel.util.FlxGradient;
 import flixel.FlxState;
+import flixel.FlxCamera;
+import flixel.FlxBasic;
+import flixel.system.FlxSound;
+import flixel.FlxObject;
+import flixel.text.FlxText;
+import flixel.text.FlxText.FlxTextBorderStyle;
+import openfl.Lib;
+import openfl.display.BlendMode;
+import openfl.filters.BitmapFilter;
+import openfl.utils.Assets;
+import flixel.math.FlxMath;
+import flixel.util.FlxSave;
+import flixel.addons.transition.FlxTransitionableState;
+import flixel.system.FlxAssets.FlxShader;
+import flixel.FlxSubState;
+import psychlua.ModchartSprite;
 
-class MusicBeatState extends FlxUIState
+#if VIDEOS_ALLOWED 
+#if (hxCodec >= "3.0.0") import hxcodec.flixel.FlxVideo as VideoHandler;
+#elseif (hxCodec >= "2.6.1") import hxcodec.VideoHandler as VideoHandler;
+#elseif (hxCodec == "2.6.0") import VideoHandler;
+#else import vlc.MP4Handler as VideoHandler; #end
+#end
+
+#if !html5
+import sys.FileSystem;
+import sys.io.File;
+#end
+
+using StringTools;
+
+interface BeatStateInterface {
+	public var camGame:FlxCamera;
+	//public var members(default, null):Array<Dynamic>;
+	
+	private var curStep:Int;
+	private var curBeat:Int;
+
+	private var curDecStep:Float;
+	private var curDecBeat:Float;
+	public var controls(get, never):Controls;
+	
+	public function get_controls():Controls;
+
+	public function runHScript(name:String, hscript:psychlua.HScript, ?modFolder:String, ?isCustomState:Bool):Void;
+
+	public function getControl(key:String):Bool;
+
+	//public function callStageFunctions(event:String,args:Array<Dynamic>,gameStages:Map<String,FunkyFunct>):Void;
+
+	public var variables:Map<String, Dynamic>;
+	public var modchartTweens:Map<String, FlxTween>;
+	public var modchartSprites:Map<String, ModchartSprite>;
+	public var modchartTimers:Map<String, FlxTimer>;
+	public var modchartSounds:Map<String, FlxSound>;
+	public var modchartTexts:Map<String, FlxText>;
+	public var modchartSaves:Map<String, FlxSave>;
+	public var runtimeShaders:Map<String, Array<String>>;
+	
+
+	private function updateBeat():Void;
+
+	private function updateCurStep():Void;
+	public var persistentUpdate:Bool;
+
+	//public function remove(Object:FlxBasic, ?Splice:Bool = false):FlxBasic;
+	//public function callOnLuas(event:String, args:Array<Dynamic>, ?ignoreStops:Bool, ?exclusions:Array<String>):Dynamic;
+	
+
+	public function stepHit():Void;
+
+	public function beatHit():Void;
+
+	public function getLuaObject(tag:String, text:Bool=true):FlxSprite;
+}
+
+class MusicBeatState extends FlxUIState implements BeatStateInterface
 {
+	public var camGame:FlxCamera;
+	
 	private var curSection:Int = 0;
 	private var stepsToDo:Int = 0;
 
@@ -15,12 +102,84 @@ class MusicBeatState extends FlxUIState
 	private var curDecStep:Float = 0;
 	private var curDecBeat:Float = 0;
 	public var controls(get, never):Controls;
-	private function get_controls()
+
+	#if (haxe >= "4.0.0")
+	public var variables:Map<String, Dynamic> = new Map();
+	public var modchartTweens:Map<String, FlxTween> = new Map<String, FlxTween>();
+	public var modchartSprites:Map<String, ModchartSprite> = new Map<String, ModchartSprite>();
+	public var modchartTimers:Map<String, FlxTimer> = new Map<String, FlxTimer>();
+	public var modchartSounds:Map<String, FlxSound> = new Map<String, FlxSound>();
+	public var modchartTexts:Map<String, FlxText> = new Map<String, FlxText>();
+	public var modchartSaves:Map<String, FlxSave> = new Map<String, FlxSave>();
+	#else
+	public var variables:Map<String, Dynamic> = new Map<String, Dynamic>();
+	public var modchartTweens:Map<String, FlxTween> = new Map();
+	public var modchartSprites:Map<String, ModchartSprite> = new Map();
+	public var modchartTimers:Map<String, FlxTimer> = new Map();
+	public var modchartSounds:Map<String, FlxSound> = new Map();
+	public var modchartTexts:Map<String, FlxText> = new Map();
+	public var modchartSaves:Map<String, FlxSave> = new Map();
+	#end
+	public var runtimeShaders:Map<String, Array<String>> = new Map<String, Array<String>>();
+	//public static var gameStages:Map<String,FunkyFunct> = new Map<String,FunkyFunct>();
+	
+
+	public static var camBeat:FlxCamera;
+
+	public function get_controls()
 	{
 		return Controls.instance;
 	}
 
-	public static var camBeat:FlxCamera;
+	/*public function get_controls():Controls
+		return PlayerSettings.player1.controls;*/
+	public var hscripter:psychlua.HScript;
+	
+	public function runHScript(name:String, hscript:psychlua.HScript, ?modFolder:String="", ?isCustomState:Bool=false){
+	
+		try{		
+			var path:String = "mods/"+modFolder+"/"+name; // Paths.getTextFromFile(name);
+			var y = '';
+			//PLEASE WORK
+			
+			if (FileSystem.exists(path)){
+				trace(path);
+				hscripter = new psychlua.HScript(null, path);
+				//y = File.getContent(path);
+			}else if(FileSystem.exists(Paths.modFolders(name))){
+				trace(Paths.modFolders(modFolder+"/"+name));
+				hscripter = new psychlua.HScript(null, path);
+				//y = File.getContent(path);
+			}else if(FileSystem.exists(Paths.modFolders(modFolder+"/"+name))){
+				trace(Paths.modFolders(modFolder+"/"+name));
+				hscripter = new psychlua.HScript(null, path);
+				//y = File.getContent(path);
+			}else if(FileSystem.exists(modFolder+"/"+name)){
+				trace(modFolder+"/"+name);
+				hscripter = new psychlua.HScript(null, path);
+				//y = File.getContent(path);
+			}else if(FileSystem.exists(Paths.modFolders(name))){
+				trace(Paths.modFolders(name));
+				hscripter = new psychlua.HScript(null, path);
+				//y = File.getContent(path);
+			}else{
+				trace(path + "Does not exist");
+				hscripter = new psychlua.HScript(null, path);
+				//y = Paths.getTextFromFile(modFolder+"/"+name);
+				if(isCustomState){
+					MusicBeatState.switchState(new states.MainMenuState());
+				}
+			}
+			
+	
+			
+			
+		}
+		catch(err){
+			trace(err);
+		}
+	}
+
 
 	override function create() {
 		camBeat = FlxG.camera;
@@ -69,6 +228,81 @@ class MusicBeatState extends FlxUIState
 		super.update(elapsed);
 	}
 
+	public function onVideoEnd(filepath:String, success:Bool = true)
+	{
+		//callStageFunctions("onVideoEnd",[filepath, success]);
+	}
+
+	public var inCutscene:Bool = false;
+	
+	public function startVideo(name:String)
+	{
+		#if VIDEOS_ALLOWED
+		inCutscene = true;
+
+		var filepath:String = Paths.video(name);
+		#if sys
+		if(!FileSystem.exists(filepath))
+		#else
+		if(!OpenFlAssets.exists(filepath))
+		#end
+		{
+			FlxG.log.warn('Couldnt find video file: ' + name);
+			onVideoEnd(filepath, false);
+			return;
+		}
+
+		var video:VideoHandler = new VideoHandler();
+			#if (hxCodec >= "3.0.0")
+			// Recent versions
+			video.play(filepath);
+			video.onEndReached.add(function()
+			{
+				video.dispose();
+				onVideoEnd(filepath);
+				return;
+			}, true);
+			#else
+			// Older versions
+			video.playVideo(filepath);
+			video.finishCallback = function()
+			{
+				onVideoEnd(filepath);
+				return;
+			}
+			#end
+		#else
+		FlxG.log.warn('Platform not supported!');
+		onVideoEnd(filepath, false);
+		return;
+		#end
+	}
+
+	public function getControl(key:String) {
+		var pressed:Bool = Reflect.getProperty(controls, key);
+		//trace('Control result: ' + pressed);
+		return pressed;
+	}
+
+	
+
+	public function callStageFunctions(event:String,args:Array<Dynamic>,gameStages:Map<String,FunkyFunct>){
+		try{
+			var ret = gameStages.get(event);
+			if(ret != null){
+				//trace(event);
+				Reflect.callMethod(null, ret.func, args);
+				/*
+				gameParameters.set("args", args);
+				ret.func();*/
+			}
+			//trace(ret+"("+event+")");
+		}
+		catch(err){
+			trace("\n["+event+"] Stage Function Error: " + err);
+		}
+	}
+
 	private function updateSection():Void
 	{
 		if(stepsToDo < 1) stepsToDo = Math.round(getBeatsOnSection() * 4);
@@ -80,6 +314,7 @@ class MusicBeatState extends FlxUIState
 			sectionHit();
 		}
 	}
+
 
 	private function rollbackSection():Void
 	{
@@ -122,12 +357,24 @@ class MusicBeatState extends FlxUIState
 		if(nextState == FlxG.state)
 		{
 			resetState();
+			trace('resetted');
 			return;
 		}
 
+		//trace('changed state');
+		var name = Type.getClassName(Type.getClass(nextState));
+		name = name.replace('.','/');
+		name = name.replace('State','Addons.hx');
+
+		
+		//trace('['+name+']');
+		trace('New Name: ['+ name +']');
+		//nextState.
 		if(FlxTransitionableState.skipNextTransIn) FlxG.switchState(nextState);
 		else startTransition(nextState);
 		FlxTransitionableState.skipNextTransIn = false;
+
+		cast(nextState, MusicBeatState).runHScript(name, null);
 	}
 
 	public static function resetState() {
@@ -198,4 +445,44 @@ class MusicBeatState extends FlxUIState
 		if(PlayState.SONG != null && PlayState.SONG.notes[curSection] != null) val = PlayState.SONG.notes[curSection].sectionBeats;
 		return val == null ? 4 : val;
 	}
+
+	public function getLuaObject(tag:String, text:Bool=true):FlxSprite {
+		if(modchartSprites.exists(tag)) return modchartSprites.get(tag);
+		if(text && modchartTexts.exists(tag)) return modchartTexts.get(tag);
+		if(variables.exists(tag)) return variables.get(tag);
+		return null;
+	}
+}
+
+/*class ModchartSprite extends FlxSprite
+{
+	public var wasAdded:Bool = false;
+	public var animOffsets:Map<String, Array<Float>> = new Map<String, Array<Float>>();
+	//public var isInFront:Bool = false;
+
+	public function new(?x:Float = 0, ?y:Float = 0)
+	{
+		super(x, y);
+		antialiasing = ClientPrefs.globalAntialiasing;
+	}
+}*/
+
+
+
+class ModchartText extends FlxText
+{
+	public var wasAdded:Bool = false;
+	public function new(x:Float, y:Float, text:String, width:Float)
+	{
+		super(x, y, width, text, 16);
+		setFormat(Paths.font("vcr.ttf"), 16, FlxColor.WHITE, CENTER, FlxTextBorderStyle.OUTLINE, FlxColor.BLACK);
+		cameras = [PlayState.instance.camHUD];
+		scrollFactor.set();
+		borderSize = 2;
+	}
+}
+
+// New Junk Below For HScript usage lol
+typedef FunkyFunct = {
+    var func:Void->Void;
 }
