@@ -193,7 +193,7 @@ class MusicBeatState extends FlxUIState implements BeatStateInterface
 				//y = File.getContent(path);
 			}else{
 				trace(path + "Does not exist");
-				hscripter = new psychlua.HScript(null, path);
+				//hscripter = new psychlua.HScript(null, path);
 				//y = Paths.getTextFromFile(modFolder+"/"+name);
 				if(isCustomState){
 					MusicBeatState.switchState(new states.MainMenuState());

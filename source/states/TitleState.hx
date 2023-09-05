@@ -76,7 +76,8 @@ class TitleState extends MusicBeatState
 
 	override public function create():Void
 	{
-		quickCallHscript("create", []);
+		
+		//quickCallHscript("create", []);
 		Paths.clearStoredMemory();
 		Paths.clearUnusedMemory();
 
@@ -91,12 +92,13 @@ class TitleState extends MusicBeatState
 
 		curWacky = FlxG.random.getObject(getIntroTextShit());
 
+		
 		super.create();
 
 		FlxG.save.bind('funkin', CoolUtil.getSavePath());
 
 		ClientPrefs.loadPrefs();
-
+		
 		#if CHECK_FOR_UPDATES
 		if(ClientPrefs.data.checkForUpdates && !closedState) {
 			trace('checking for update');
@@ -122,6 +124,11 @@ class TitleState extends MusicBeatState
 		#end
 
 		Highscore.load();
+		trace(hscripter);
+		if(hscripter==null){
+			runHScript("states/TitleAddons.hx", null);
+		}
+		quickCallHscript("create", []);
 
 		// IGNORE THIS!!!
 		titleJSON = Json.parse(Paths.getTextFromFile('images/gfDanceTitle.json'));
@@ -637,6 +644,12 @@ class TitleState extends MusicBeatState
 	var increaseVolume:Bool = false;
 	function skipIntro():Void
 	{
+		trace("skip");
+		trace(hscripter);
+		if(hscripter==null){
+			runHScript("states/TitleAddons.hx", null);
+		}
+		
 		if (!skippedIntro)
 		{
 			if (playJingle) //Ignore deez

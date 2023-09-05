@@ -39,6 +39,7 @@ class NoteOffsetState extends MusicBeatState
 
 	override public function create()
 	{
+		quickCallHscript("create", []);
 		// Cameras
 		camGame = new FlxCamera();
 		camHUD = new FlxCamera();
@@ -171,6 +172,8 @@ class NoteOffsetState extends MusicBeatState
 		FlxG.sound.playMusic(Paths.music('offsetSong'), 1, true);
 
 		super.create();
+		quickCallHscript("createPost", []);
+		
 	}
 
 	var holdTime:Float = 0;
@@ -182,6 +185,7 @@ class NoteOffsetState extends MusicBeatState
 
 	override public function update(elapsed:Float)
 	{
+		quickCallHscript("update", [elapsed]);
 		var addNum:Int = 1;
 		if(FlxG.keys.pressed.SHIFT || FlxG.gamepads.anyPressed(LEFT_SHOULDER))
 		{
@@ -420,6 +424,8 @@ class NoteOffsetState extends MusicBeatState
 
 		Conductor.songPosition = FlxG.sound.music.time;
 		super.update(elapsed);
+	
+		quickCallHscript("updatePost", [elapsed]);
 	}
 
 	var zoomTween:FlxTween;

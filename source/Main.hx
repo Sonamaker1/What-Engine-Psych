@@ -12,7 +12,7 @@ import openfl.events.Event;
 import openfl.display.StageScaleMode;
 import lime.app.Application;
 import states.TitleState;
-
+import backend.MusicBeatState;
 //crash handler stuff
 #if CRASH_HANDLER
 import openfl.events.UncaughtErrorEvent;
@@ -94,8 +94,7 @@ class Main extends Sprite
 		//trace('['+name+']');
 		trace('First State: ['+ name +']');
 
-		cast(FlxG.state, MusicBeatState).runHScript(name, null);
-
+		
 		#if !mobile
 		fpsVar = new FPS(10, 3, 0xFFFFFF);
 		addChild(fpsVar);
@@ -131,7 +130,8 @@ class Main extends Sprite
 
 		     if (FlxG.game != null)
 			 resetSpriteCache(FlxG.game);
-		});
+		});	
+
 	}
 
 	static function resetSpriteCache(sprite:Sprite):Void {
