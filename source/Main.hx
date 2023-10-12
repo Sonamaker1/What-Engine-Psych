@@ -1,7 +1,7 @@
 package;
 
 import flixel.graphics.FlxGraphic;
-
+import tools.SoundCompare;
 import flixel.FlxGame;
 import flixel.FlxState;
 import openfl.Assets;

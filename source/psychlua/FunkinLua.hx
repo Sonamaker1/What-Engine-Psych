@@ -21,6 +21,7 @@ import sys.io.File;
 #end
 
 import cutscenes.DialogueBoxPsych;
+import cutscenes.DialogueUtil;
 
 import objects.StrumNote;
 import objects.Note;
@@ -1264,6 +1265,62 @@ class FunkinLua {
 			if(spr != null) return spr.pixels.getPixel32(x, y);
 			return FlxColor.BLACK;
 		});
+		
+		Lua_helper.add_callback(lua, "say", function( dialogue:String, characterName:String)
+		{
+			trace("quick-say");
+			//var getCharacter = new DialogueCharacter(0,0, characterName);
+			var line = DialogueUtil.makeLine(dialogue, characterName, 'talk', 'normal', 0.05, '');
+			//trace(line);
+			return 0;
+		});
+
+
+		Lua_helper.add_callback(lua, "sayOption", function(id:Int, property:String, action:Dynamic)
+		{
+			var sayLine = DialogueUtil.getLine(id);
+			Reflect.setProperty(sayLine, property, action);
+			trace("Altered: ["+sayLine.text + "], "+property +":" + action);
+			return 0;
+		});
+	
+		Lua_helper.add_callback(lua, "addDialogue", function( dialogue:String, characterName:String, expression:String, boxState:String, speed:Null<Float>, sound:String)
+		{	
+			var expression0:String = expression!=null? expression : 'talk';
+			var boxState0:String = boxState!=null? expression : 'normal';
+			var speed0:Float = speed!=null? speed : 0.05;
+			var sound0:String = sound!=null? sound:'';
+
+			trace("ack");
+			//var getCharacter = new DialogueCharacter(0,0, characterName);
+			var line = DialogueUtil.makeLine(dialogue, characterName, expression0,  boxState0, speed0, sound0);
+			//trace(line);
+			return 0;
+		});
+	
+
+		Lua_helper.add_callback(lua, "clearDialogue", function() {
+			DialogueUtil.buffer = [];
+			return 0;
+		});
+
+		Lua_helper.add_callback(lua, "sayDialogue", function( music:String = null) {
+			var shit:DialogueFile = {dialogue: DialogueUtil.buffer};
+			if(shit.dialogue.length > 0) {
+				PlayState.instance.startDialogue(shit, music);
+				luaTrace('startDialogue: Successfully loaded dialogue', false, false, FlxColor.GREEN);
+				return true;
+			} else {
+				luaTrace('startDialogue: Your dialogue file is badly formatted!', false, false, FlxColor.RED);
+				if(PlayState.instance.endingSong) {
+					PlayState.instance.endSong();
+				} else {
+					PlayState.instance.startCountdown();
+				}
+			}
+			return false;
+		});
+		
 		Lua_helper.add_callback(lua, "startDialogue", function(dialogueFile:String, music:String = null) {
 			var path:String;
 			#if MODS_ALLOWED
