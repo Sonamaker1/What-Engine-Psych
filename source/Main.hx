@@ -12,7 +12,11 @@ import openfl.events.Event;
 import openfl.display.StageScaleMode;
 import lime.app.Application;
 import states.TitleState;
-import backend.MusicBeatState;
+
+#if linux
+import lime.graphics.Image;
+#end
+
 //crash handler stuff
 #if CRASH_HANDLER
 import openfl.events.UncaughtErrorEvent;
@@ -21,6 +25,13 @@ import haxe.io.Path;
 import sys.FileSystem;
 import sys.io.File;
 import sys.io.Process;
+#end
+
+#if linux
+@:cppInclude('./external/gamemode_client.h')
+@:cppFileCode('
+	#define GAMEMODE_AUTO
+')
 #end
 
 class Main extends Sprite
@@ -85,6 +96,7 @@ class Main extends Sprite
 		#if LUA_ALLOWED Lua.set_callbacks_function(cpp.Callable.fromStaticFunction(psychlua.CallbackHandler.call)); #end
 		Controls.instance = new Controls();
 		ClientPrefs.loadDefaultKeys();
+		#if ACHIEVEMENTS_ALLOWED Achievements.load(); #end
 		addChild(new FlxGame(game.width, game.height, game.initialState, #if (flixel < "5.0.0") game.zoom, #end game.framerate, game.framerate, game.skipSplash, game.startFullscreen));
 
 		//trace('changed state');
@@ -103,6 +115,11 @@ class Main extends Sprite
 		if(fpsVar != null) {
 			fpsVar.visible = ClientPrefs.data.showFPS;
 		}
+		#end
+
+		#if linux
+		var icon = Image.fromFile("icon.png");
+		Lib.current.stage.window.setIcon(icon);
 		#end
 
 		#if html5
@@ -130,8 +147,7 @@ class Main extends Sprite
 
 		     if (FlxG.game != null)
 			 resetSpriteCache(FlxG.game);
-		});	
-
+		});
 	}
 
 	static function resetSpriteCache(sprite:Sprite):Void {

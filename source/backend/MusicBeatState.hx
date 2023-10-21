@@ -138,6 +138,7 @@ class MusicBeatState extends FlxUIState implements BeatStateInterface
 	public var hscripter:psychlua.HScript;
 	
 	public function quickCallHscript(eventName:String, args:Array<Dynamic>){
+		//trace(eventName);
 		if (args == null){
 			args=[];
 		}
@@ -145,12 +146,28 @@ class MusicBeatState extends FlxUIState implements BeatStateInterface
 			var ret = gameStages.get(eventName);
 			if(ret!=null){
 				Reflect.callMethod(null, ret.func, args);
+				//trace("route1");
 				return;
 			}
 			else{
-				var ret2 = hscripter.variables.get(eventName);
-				if(ret2 != null){
-					Reflect.callMethod(null, ret2, args);
+
+				//var stringthing = "";
+				//stringthing += "route2";
+				if(hscripter.exists(eventName)){
+					//Reflect.callMethod(null, ret2, args);
+					//stringthing+=": huh ";
+					var callValue = hscripter.call(eventName);
+					if(!callValue.succeeded)
+					{
+						//stringthing+=": do we even get here?";
+						for (e in callValue.exceptions)
+							if (e != null) 
+								trace('ERROR - ${e.message.substr(0, e.message.indexOf('\n'))}');
+					}
+				}
+				//stringthing+=": "+hscripter.exists(eventName);
+				if(hscripter.exists(eventName)){
+					//trace(stringthing);
 				}
 			}
 		}
@@ -442,6 +459,7 @@ class MusicBeatState extends FlxUIState implements BeatStateInterface
 
 		if (curStep % 4 == 0)
 			beatHit();
+		quickCallHscript("super_stepHit", []);
 	}
 
 	public var stages:Array<BaseStage> = [];
