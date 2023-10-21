@@ -442,6 +442,7 @@ class MusicBeatState extends FlxUIState implements BeatStateInterface
 
 		if (curStep % 4 == 0)
 			beatHit();
+		quickCallHscript("super_stepHit", []);
 	}
 
 	public var stages:Array<BaseStage> = [];
